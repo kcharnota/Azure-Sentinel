@@ -1,0 +1,49 @@
+name: Tor Activity to the Internet
+description: |
+  'Identifies IPs from which users grant access to other users on azure resources and alerts when a previously unseen source IP address is used.'
+severity: Medium
+requiredDataConnectors:
+  - connectorId: CommonSecurityLog - Firewall //Firewall Connector
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Exfiltration
+relevantTechniques:
+  - T1048
+query: |
+
+let IP_172 = '172.16.0.0/12';
+let IP_10 = '10.0.0.0/8';
+let IP_192 = '192.168.0.0/16';
+CommonSecurityLog
+| where DeviceVendor in ("Firewall Vendor") // Change Firewall Vendor 
+    and DeviceProduct in ("Firewall product") // Change Firewall Product
+    and isnotempty(SourceIP) 
+    and Protocol == "6" 
+    and DestinationPort in ("9001", "9030") 
+    and DeviceAction != "Drop"
+| extend SrcIP = trim(" ", SourceIP), DstIP = trim(" ", DestinationIP)
+| where ipv4_compare(SrcIP, IP_172) == 0 
+    or ipv4_compare(SrcIP, IP_10) == 0 or ipv4_compare(SrcIP, IP_192) == 0
+| where ipv4_compare(DstIP, IP_172) != 0 
+    and ipv4_compare(DstIP, IP_10) != 0 and ipv4_compare(DstIP, IP_192) != 0
+    and DstIP !in ((_GetWatchlist('Firewall IP list') //Exclusion of Firewall IPs
+    | project SearchKey))
+    and DstIP in ((externaldata(ip: string)
+    [@"https://raw.githubusercontent.com/SecOps-Institute/Tor-IP-Addresses/master/tor-exit-nodes.lst"] //GIT from TOR IP Address Exit Node List
+    with(format="csv")
+    ))
+| project
+    TimeGenerated,
+    SrcIP,
+    SourcePort,
+    DstIP,
+    DestinationPort,
+    SourceUserName,
+    Protocol,
+    DeviceAction
+| extend AccountCustomEntity = SourceUserName, IPCustomEntity = SrcIP
