@@ -1,3 +1,4 @@
+id: f2489aac-3c8a-4c9b-a92b-491aaccf85e5
 name: Conditional Access Policy Updated
 description: |
   'Identifies conditional Access Policy and Named Locations Changes.'
@@ -13,7 +14,7 @@ triggerThreshold: 0
 tactics:
   - Execution
 relevantTechniques:
-  - T1098
+  - T1204
 query: |
 
 AuditLogs 
