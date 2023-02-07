@@ -1,0 +1,23 @@
+name: Conditional Access Policy Updated
+description: |
+  'Identifies conditional Access Policy and Named Locations Changes.'
+severity: Medium
+requiredDataConnectors:
+  - connectorId: AzureActivity
+    dataTypes:
+      - AzureActivity
+queryFrequency: 4h
+queryPeriod: 4h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Execution
+relevantTechniques:
+  - T1098
+query: |
+
+AuditLogs 
+| where Category == "Policy"
+| where TargetResources[0].displayName != "ClaimIssuancePolicy"
+| where ActivityDisplayName == "Update policy" or ActivityDisplayName == "Update named location"
+| project ActivityDateTime, InitiatedBy.user.userPrincipalName, TargetResources[0].displayName, ActivityDisplayName
