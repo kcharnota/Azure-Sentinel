@@ -1,0 +1,28 @@
+id: 9a711444-efd5-4904-bb08-28bb6d2a900c
+name: Email Forwarding Configured
+description: |
+  'Forwarding rule set up.'
+severity: Medium
+requiredDataConnectors:
+  - connectorId: OfficeActivity
+    dataTypes:
+      - OfficeActivity
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Execution
+relevantTechniques:
+  - T1020
+query: |
+
+OfficeActivity
+| where OfficeWorkload == "Exchange"
+| where parse_json(tostring(OperationProperties[6].Value))[0].ActionType == "Forward"
+| extend Name_ = tostring(parse_json(Parameters)[2].Name)
+| extend Recipient = parse_json(tostring(parse_json(tostring(OperationProperties[6].Value))[0].Recipients))[0] 
+| extend MailboxPrimaryAddress = UserId 
+| extend domain = split(Recipient, "@")
+//| where domain[1] !startswith "Domain name after @" //If you want to set up exclusions to allow forwarding internal
+| project MailboxOwnerUPN, MailboxPrimaryAddress, UserId, Recipient, Name_, domain
