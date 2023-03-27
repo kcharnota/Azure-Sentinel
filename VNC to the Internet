@@ -1,0 +1,32 @@
+id: 276c5413-fb70-4e18-b064-3081f6dc546f
+name: SSH from the Internet
+description: |
+  'Identifies SSH from the Internet.'
+severity: Medium
+requiredDataConnectors:
+  - connectorId: CommonSecurityLog
+    dataTypes:
+      - Firewall
+queryFrequency: 4h
+queryPeriod: 4h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Exfiltration
+query: |
+
+let externalIPs = dynamic([External IPs]);
+let externalIP_1 = "12.51.139.160/27";
+let externalIPs2_start = parse_ipv4('Corp External IPs');
+let externalIPs2_end = parse_ipv4('Corp External IPs');
+let IP_172 = '172.16.0.0/12';
+let IP_10 = '10.0.0.0/8';
+let IP_192 = '192.168.0.0/16';
+CommonSecurityLog
+| where DeviceVendor == "Firewall" and DeviceProduct == "Firewall" and isnotempty(SourceIP) and Protocol == "6" and DestinationPort in ("5800", "5801", "5802", "5803", "5804", "5805", "5806", "5807", "5808", "5809", "5810") and DeviceAction != "Drop"
+| extend SrcIP = trim(" ", SourceIP), DstIP = trim(" ", DestinationIP)
+| where ipv4_compare(SrcIP, IP_172) == 0 or ipv4_compare(SrcIP, IP_10) == 0 or ipv4_compare(SrcIP, IP_192) == 0
+| where ipv4_compare(DstIP, IP_172) != 0 and ipv4_compare(DstIP, IP_10) != 0 and ipv4_compare(DstIP, IP_192) != 0
+| where ipv4_compare(DstIP, externalIP_1) != 0 and parse_ipv4(DstIP) !between (externalIPs2_start..externalIPs2_end) and parse_ipv4(DstIP) and DstIP !in (externalIPs)
+| project TimeGenerated, SrcIP, SourcePort, DstIP, DestinationPort, SourceUserName, Protocol, DeviceAction
+| extend AccountCustomEntity = SourceUserName, IPCustomEntity = SrcIP
