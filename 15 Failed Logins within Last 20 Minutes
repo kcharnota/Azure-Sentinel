@@ -1,0 +1,33 @@
+id: 540ea2d7-4745-4f9e-937f-4dd7388150ae
+name: 15 Failed Logins within Last 20 Minutes
+description: |
+  '15 Failed Logins within Last 20 Minutes.'
+severity: Medium
+requiredDataConnectors:
+  - connectorId: AzureActivity
+    dataTypes:
+      - AzureActivity
+queryFrequency: 20m
+queryPeriod: 20m
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Execution
+relevantTechniques:
+  - T1204
+query: |
+
+let exclusions = dynamic(["Add any excusions"]); //Add Exclusions
+let counts =
+SecurityEvent
+| where EventID == 4625
+| where AccountType <> "Machine"
+| where IpAddress !in (exclusions)
+| distinct TargetAccount, IpAddress
+| summarize count() by IpAddress
+| where count_ >= 15
+;
+SecurityEvent
+| join kind=inner counts on IpAddress
+| where EventID == 4625
+| distinct TargetAccount, IpAddress
