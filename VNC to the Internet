@@ -1,7 +1,7 @@
 id: 276c5413-fb70-4e18-b064-3081f6dc546f
-name: SSH from the Internet
+name: VNC from the Internet
 description: |
-  'Identifies SSH from the Internet.'
+  'Identifies VNC from the Internet.'
 severity: Medium
 requiredDataConnectors:
   - connectorId: CommonSecurityLog
